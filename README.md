@@ -1,6 +1,6 @@
 # WA-MediaSorter — Organizador Inteligente de Imagens do WhatsApp
 
-Aplicação local para Windows desenvolvida em **Python** e **FastAPI**, com interface web leve em português, que identifica imagens de interesse em grupos do WhatsApp, aplica regras configuráveis pelo usuário e salva as imagens aprovadas em um diretório escolhido.
+<!-- Aplicação local para Windows desenvolvida em **Python** e **FastAPI**, com interface web leve em português, que identifica imagens de interesse em grupos do WhatsApp, aplica regras configuráveis pelo usuário e salva as imagens aprovadas em um diretório escolhido.
 
 ---
 
@@ -190,6 +190,11 @@ pytest tests/ -v
 | :--- | :--- | :--- |
 | **`python: command not found`** | Python não instalado ou não adicionado ao PATH | Instale o Python (3.10+) marcando a opção *"Add python.exe to PATH"*. |
 | **`Script execution is disabled` (PowerShell)** | Política de execução de scripts do Windows restrita | Execute `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` ou utilize o Prompt de Comando (cmd). |
+
+
+-->
+
+-->
 | **"Sem permissão de gravação na pasta"** | Pasta de destino protegida pelo sistema operacional | Escolha uma pasta do seu usuário, como `C:\Users\SeuUsuario\Downloads` ou `Imagens`. |
 | **Porta 8000 já em uso** | Outro aplicativo local está utilizando a porta 8000 | Altere a porta no arquivo `app/config.py` ou encerre o processo conflitante. |
 | **Driver do WhatsApp indisponível** | Pacote `playwright` não instalado no ambiente | Execute `pip install playwright` seguido de `playwright install chromium`. |
