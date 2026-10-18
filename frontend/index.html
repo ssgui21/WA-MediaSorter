@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WA-MediaSorter - Organizador de Imagens</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Cabeçalho -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">📸</div>
+        <div>
+          <h1>WA-MediaSorter</h1>
+          <span class="brand-tagline">Organizador Inteligente de Imagens do WhatsApp</span>
+        </div>
+      </div>
+      <div class="header-status">
+        <span class="status-badge" id="appStatusBadge">
+          <span class="status-dot"></span> <span id="appStatusText">Carregando...</span>
+        </span>
+        <span class="status-badge" id="waStatusBadge">
+          <span class="status-dot"></span> <span id="waStatusText">WhatsApp: Verificando...</span>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navegação Principal -->
+  <nav class="main-nav">
+    <div class="nav-container">
+      <button class="nav-btn active" data-tab="dashboard">📊 Painel Inicial</button>
+      <button class="nav-btn" data-tab="whatsapp">📱 Conexão WhatsApp</button>
+      <button class="nav-btn" data-tab="rules">⚙️ Configuração de Regras</button>
+      <button class="nav-btn" data-tab="destination">📁 Pasta de Destino</button>
+      <button class="nav-btn" data-tab="processing">🚀 Prévia e Processamento</button>
+      <button class="nav-btn" data-tab="history">📜 Histórico</button>
+    </div>
+  </nav>
+
+  <!-- Conteúdo Principal -->
+  <main class="app-main">
+    <!-- Alertas Globais -->
+    <div id="globalAlert" class="alert hidden"></div>
+
+    <!-- 1. PAINEL INICIAL (DASHBOARD) -->
+    <section id="tab-dashboard" class="tab-pane active">
+      <div class="section-header">
+        <h2>Visão Geral da Sessão</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadDashboard()">🔄 Atualizar</button>
+      </div>
+
+      <!-- Métricas da Sessão -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Analisadas na Sessão</div>
+          <div class="stat-value" id="statProcessed">0</div>
+          <div class="stat-desc">Imagens verificadas pelo motor</div>
+        </div>
+        <div class="stat-card stat-success">
+          <div class="stat-label">Aprovadas</div>
+          <div class="stat-value" id="statApproved">0</div>
+          <div class="stat-desc">Atenderam aos critérios ativos</div>
+        </div>
+        <div class="stat-card stat-warning">
+          <div class="stat-label">Rejeitadas</div>
+          <div class="stat-value" id="statRejected">0</div>
+          <div class="stat-desc">Não corresponderam às regras</div>
+        </div>
+        <div class="stat-card stat-info">
+          <div class="stat-label">Salvas no Destino</div>
+          <div class="stat-value" id="statSaved">0</div>
+          <div class="stat-desc">Gravadas na pasta sem conflitos</div>
+        </div>
+      </div>
+
+      <!-- Resumo do Sistema -->
+      <div class="dashboard-details-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3>📱 Status do WhatsApp</h3>
+            <a href="#" class="card-link" onclick="switchTab('whatsapp')">Gerenciar</a>
+          </div>
+          <div class="card-body">
+            <div class="info-row">
+              <span class="info-label">Estado:</span>
+              <span class="info-value" id="dashWaState">Verificando...</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Grupos Disponíveis:</span>
+              <span class="info-value" id="dashWaGroups">0</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Grupo Selecionado:</span>
+              <span class="info-value" id="dashWaSelected">Nenhum</span>
+            </div>
+            <p class="text-muted text-sm mt-2" id="dashWaMsg">Carregando detalhes da integração...</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>📁 Destino das Imagens</h3>
+            <a href="#" class="card-link" onclick="switchTab('destination')">Alterar</a>
+          </div>
+          <div class="card-body">
+            <div class="info-row">
+              <span class="info-label">Pasta Atual:</span>
+              <span class="info-value font-mono text-sm" id="dashDestPath">Não definida</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Permissão de Escrita:</span>
+              <span class="info-value" id="dashDestValid">Verificando...</span>
+            </div>
+            <p class="text-muted text-sm mt-2" id="dashDestMsg">Verificando integridade da pasta local...</p>
+          </div>
+        </div>
+
+        <div class="card card-wide">
+          <div class="card-header">
+            <h3>⚙️ Regras Ativas de Filtro (<span id="dashActiveRulesCount">0</span>)</h3>
+            <a href="#" class="card-link" onclick="switchTab('rules')">Editar Regras</a>
+          </div>
+          <div class="card-body">
+            <div id="dashRulesList" class="badge-list">
+              <span class="empty-state-text">Nenhuma regra ativa no momento.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. CONEXÃO COM O WHATSAPP -->
+    <section id="tab-whatsapp" class="tab-pane">
+      <div class="section-header">
+        <h2>Conexão com o WhatsApp</h2>
+        <span class="badge" id="waHeaderState">Desconectado</span>
+      </div>
+
+      <div class="whatsapp-layout">
+        <!-- Painel de Conexão -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Controle de Conexão</h3>
+          </div>
+          <div class="card-body">
+            <p id="waDetailMessage" class="mb-3">WhatsApp desconectado. Inicie a conexão para autenticar.</p>
+            <div class="btn-group mb-3">
+              <button class="btn btn-primary" id="btnWaConnect" onclick="connectWhatsApp()">Conectar WhatsApp</button>
+              <button class="btn btn-danger" id="btnWaDisconnect" onclick="disconnectWhatsApp()" disabled>Desconectar Sessão</button>
+              <button class="btn btn-secondary" onclick="checkWhatsAppStatus()">🔄 Atualizar Status</button>
+            </div>
+
+            <!-- Área de QR Code -->
+            <div id="waQrArea" class="qr-container hidden">
+              <div class="qr-box">
+                <div class="qr-placeholder" id="qrVisual">Aguardando QR Code...</div>
+              </div>
+              <div class="qr-instructions">
+                <h4>Como autenticar:</h4>
+                <ol>
+                  <li>Abra o WhatsApp em seu celular.</li>
+                  <li>Acesse <strong>Configurações</strong> &gt; <strong>Aparelhos Conectados</strong>.</li>
+                  <li>Toque em <strong>Conectar um aparelho</strong>.</li>
+                  <li>Aponte a câmera para o QR Code exibido.</li>
+                </ol>
+                <p class="text-sm text-muted">Nenhuma senha é solicitada. Os dados da sessão permanecem estritamente em seu computador.</p>
+              </div>
+            </div>
+
+            <!-- Nota técnica de transparência -->
+            <div class="notice-box mt-3">
+              <h4>ℹ️ Informações sobre a Integração</h4>
+              <p id="waTechnicalNotice" class="text-sm">
+                A integração com WhatsApp para contas pessoais é realizada através de automação de navegador local (WhatsApp Web).
+                Não utiliza serviços pagos (custo R$ 0). A aplicação apenas lê mensagens necessárias para identificar imagens,
+                sem envio de mensagens automáticas ou acesso à lista de contatos privada.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Grupos -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Grupos do WhatsApp Acessíveis</h3>
+            <button class="btn btn-secondary btn-sm" onclick="loadWhatsAppGroups()">Atualizar Grupos</button>
+          </div>
+          <div class="card-body">
+            <div id="waGroupsContainer">
+              <div class="empty-state">
+                <div class="empty-icon">👥</div>
+                <p>Nenhum grupo listado.</p>
+                <span class="text-sm text-muted">Conecte sua conta do WhatsApp para visualizar e selecionar seus grupos reais. Não exibimos grupos fictícios.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. CONFIGURAÇÃO DE REGRAS -->
+    <section id="tab-rules" class="tab-pane">
+      <div class="section-header">
+        <h2>Regras de Filtro de Imagens</h2>
+        <button class="btn btn-primary" onclick="openNewRuleModal()">➕ Nova Regra</button>
+      </div>
+
+      <p class="text-muted mb-3">
+        Configure o que caracteriza uma imagem de interesse. Você pode combinar palavras na legenda,
+        buscar logotipos de referência ou definir limites mínimos de confiança.
+      </p>
+
+      <!-- Lista de Regras -->
+      <div id="rulesListContainer" class="rules-container">
+        <div class="empty-state">
+          <div class="empty-icon">⚙️</div>
+          <p>Nenhuma regra cadastrada.</p>
+          <span class="text-sm text-muted">Clique em "Nova Regra" para criar critérios de identificação de imagens.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. CONFIGURAÇÃO DO DESTINO -->
+    <section id="tab-destination" class="tab-pane">
+      <div class="section-header">
+        <h2>Pasta Local de Destino</h2>
+      </div>
+
+      <div class="card max-w-2xl">
+        <div class="card-header">
+          <h3>Definir Onde Salvar as Imagens Aprovadas</h3>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-3">
+            Todas as imagens aprovadas pelo motor de regras serão salvas nesta pasta.
+            O sistema valida a permissão de escrita e garante que arquivos existentes nunca sejam sobrescritos silenciosamente.
+          </p>
+
+          <form id="destinationForm" onsubmit="handleSaveDestination(event)">
+            <div class="form-group">
+              <label for="destInputPath">Caminho da Pasta no Windows:</label>
+              <div class="input-with-button">
+                <input type="text" id="destInputPath" class="form-control font-mono" placeholder="Ex: C:\Users\SeuUsuario\Downloads" required>
+                <button type="button" class="btn btn-secondary" onclick="testDestinationPath()">Validar</button>
+              </div>
+              <span class="text-xs text-muted">Exemplo: C:\Users\SeuUsuario\Desktop\ImagensWhatsapp ou pasta relativa do projeto.</span>
+            </div>
+
+            <div id="destValidationResult" class="validation-box mt-3 hidden"></div>
+
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn btn-primary">Salvar Pasta de Destino</button>
+              <button type="button" class="btn btn-secondary" onclick="resetToDefaultDestination()">Restaurar Pasta Padrão</button>
+            </div>
+          </form>
+
+          <div class="policy-notice mt-4">
+            <h4>🛡️ Política de Conflito de Nomes e Deduplicação</h4>
+            <ul class="text-sm">
+              <li><strong>Sem sobrescrita silenciosa:</strong> Se já existir um arquivo <code>imagem.jpg</code>, o novo será salvo como <code>imagem_1.jpg</code>, <code>imagem_2.jpg</code>, etc.</li>
+              <li><strong>Prevenção de duplicatas por Hash SHA-256:</strong> Se o conteúdo exato da imagem já tiver sido salvo antes, o sistema evita criar arquivos repetidos.</li>
+              <li><strong>Segurança:</strong> Tentativas de gravação fora do diretório autorizado são bloqueadas.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. PRÉVIA E PROCESSAMENTO -->
+    <section id="tab-processing" class="tab-pane">
+      <div class="section-header">
+        <h2>Prévia e Processamento de Imagens</h2>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="runPreview()">👁️ Visualizar Prévia</button>
+          <button class="btn btn-primary" id="btnStartProcessing" onclick="startProcessing()">▶️ Iniciar Processamento</button>
+          <button class="btn btn-danger hidden" id="btnCancelProcessing" onclick="cancelProcessing()">⏹️ Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Barra de Origem e Filtros -->
+      <div class="card mb-3">
+        <div class="card-body flex-row items-center gap-3">
+          <div class="form-inline">
+            <label for="sourceSelect"><strong>Origem das Imagens:</strong></label>
+            <select id="sourceSelect" class="form-control" onchange="handleSourceChange()">
+              <option value="sample">📁 Modo Amostra Local (Demonstração e Testes)</option>
+              <option value="whatsapp">📱 Grupo do WhatsApp Conectado</option>
+            </select>
+          </div>
+          <div id="sampleUploadArea" class="flex-row items-center gap-2">
+            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('sampleFileInput').click()">📤 Adicionar Imagem de Teste</button>
+            <input type="file" id="sampleFileInput" class="hidden" accept="image/*" onchange="uploadSampleFile(event)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Progresso do Processamento -->
+      <div id="processingProgressArea" class="card mb-3 hidden">
+        <div class="card-body">
+          <div class="flex-row justify-between mb-2">
+            <span id="progressMessage">Processando...</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+          </div>
+          <div class="progress-counters mt-2 text-sm text-muted">
+            <span>Processadas: <strong id="progProcessed">0</strong>/<span id="progTotal">0</span></span> |
+            <span>Aprovadas: <strong class="text-success" id="progApproved">0</strong></span> |
+            <span>Salvas: <strong class="text-info" id="progSaved">0</strong></span> |
+            <span>Rejeitadas: <strong class="text-warning" id="progRejected">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grade de Prévia / Resultados -->
+      <div class="results-header mb-2 flex-row justify-between items-center">
+        <h3>Imagens Avaliadas (<span id="resultsCount">0</span>)</h3>
+        <span class="text-sm text-muted">Miniatura, critérios avaliados e justificativa de cada item</span>
+      </div>
+
+      <div id="resultsGrid" class="results-grid">
+        <div class="empty-state col-span-full">
+          <div class="empty-icon">🖼️</div>
+          <p>Nenhuma imagem avaliada ainda.</p>
+          <span class="text-sm text-muted">Clique em "Visualizar Prévia" para conferir a avaliação das regras ou em "Iniciar Processamento" para salvar.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. HISTÓRICO -->
+    <section id="tab-history" class="tab-pane">
+      <div class="section-header">
+        <h2>Histórico de Execuções</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadHistory()">🔄 Atualizar</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data e Hora</th>
+                  <th>Origem</th>
+                  <th>Analisadas</th>
+                  <th>Aprovadas</th>
+                  <th>Rejeitadas</th>
+                  <th>Salvas</th>
+                  <th>Erros</th>
+                  <th>Detalhes</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <tr>
+                  <td colspan="8" class="text-center text-muted">Nenhuma execução registrada no banco local.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL DE CRIAR / EDITAR REGRA -->
+  <div id="ruleModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="ruleModalTitle">Nova Regra de Imagem</h3>
+        <button class="modal-close" onclick="closeRuleModal()">&times;</button>
+      </div>
+      <form id="ruleForm" onsubmit="handleSaveRule(event)">
+        <input type="hidden" id="ruleId">
+        <div class="modal-body">
+          <!-- Nome da Regra -->
+          <div class="form-group">
+            <label for="ruleName">Nome da Regra:</label>
+            <input type="text" id="ruleName" class="form-control" placeholder="Ex: Comprovantes Bancários ou Logotipo da Loja" required>
+          </div>
+
+          <!-- Tipo de Critério -->
+          <div class="form-group">
+            <label for="ruleCriteriaType">Tipo de Critério Principal:</label>
+            <select id="ruleCriteriaType" class="form-control" onchange="handleCriteriaTypeChange()">
+              <option value="text">📝 Critério Textual (Palavras na legenda / nome do arquivo)</option>
+              <option value="logo">🏷️ Logotipo / Marca (Imagem de referência do usuário)</option>
+              <option value="object">🔍 Objeto ou Conteúdo Visual (Descrição do conteúdo)</option>
+              <option value="combination">🔀 Combinação de Múltiplos Critérios</option>
+            </select>
+          </div>
+
+          <!-- Operador Lógico -->
+          <div class="form-group">
+            <label for="ruleLogicalOp">Operador de Avaliação:</label>
+            <select id="ruleLogicalOp" class="form-control">
+              <option value="OR">OR (Basta atender a pelo menos um critério ativo)</option>
+              <option value="AND">AND (Todos os critérios ativos precisam ser atendidos)</option>
+            </select>
+            <span class="text-xs text-muted">Define como os critérios desta regra são combinados.</span>
+          </div>
+
+          <!-- Limite de Confiança Mínima -->
+          <div class="form-group">
+            <label for="ruleConfidence">Limite Mínimo de Confiança (0.0 a 1.0):</label>
+            <div class="range-with-val">
+              <input type="range" id="ruleConfidence" min="0.0" max="1.0" step="0.05" value="0.5" oninput="document.getElementById('ruleConfidenceVal').textContent = (this.value * 100).toFixed(0) + '%'">
+              <span id="ruleConfidenceVal" class="range-val font-mono">50%</span>
+            </div>
+            <span class="text-xs text-muted">Apenas critérios com pontuação igual ou superior a este limite serão aceitos.</span>
+          </div>
+
+          <!-- Painel Dinâmico: Texto -->
+          <div id="cfgTextPanel" class="config-panel">
+            <div class="form-group">
+              <label for="ruleKeywords">Palavras-chave ou Expressões (separadas por vírgula):</label>
+              <input type="text" id="ruleKeywords" class="form-control" placeholder="Ex: comprovante, pagamento, pix, boleto, fatura">
+            </div>
+            <div class="form-group">
+              <label for="ruleMatchMode">Modo de Correspondência:</label>
+              <select id="ruleMatchMode" class="form-control">
+                <option value="any">Qualquer uma das palavras (Any)</option>
+                <option value="all">Todas as palavras (All)</option>
+                <option value="exact">Expressão exata (Exact)</option>
+              </select>
+            </div>
+            <div class="form-checkbox">
+              <input type="checkbox" id="ruleCaseSensitive">
+              <label for="ruleCaseSensitive">Diferenciar maiúsculas e minúsculas (Case Sensitive)</label>
+            </div>
+          </div>
+
+          <!-- Painel Dinâmico: Logotipo -->
+          <div id="cfgLogoPanel" class="config-panel hidden">
+            <div class="form-group">
+              <label for="ruleLogoPath">Caminho da Imagem de Logotipo de Referência:</label>
+              <input type="text" id="ruleLogoPath" class="form-control font-mono" placeholder="Ex: C:\Users\SeuUsuario\Desktop\logo_empresa.png">
+              <span class="text-xs text-muted">Forneça o caminho local de um arquivo PNG ou JPG contendo o logotipo para comparação visual.</span>
+            </div>
+          </div>
+
+          <!-- Painel Dinâmico: Objeto -->
+          <div id="cfgObjectPanel" class="config-panel hidden">
+            <div class="form-group">
+              <label for="ruleObjectDesc">Descrição do Conteúdo Visual a Identificar:</label>
+              <input type="text" id="ruleObjectDesc" class="form-control" placeholder="Ex: carro, pessoa, animal, recibo">
+            </div>
+            <div class="notice-box text-xs">
+              <strong>Nota sobre Reconhecimento Semântico Local:</strong>
+              O processamento ocorre 100% no seu computador sem APIs pagas em nuvem. Se nenhum modelo neural local leve estiver pré-carregado, este critério será apontado como indisponível para evitar decisões incorretas.
+            </div>
+          </div>
+
+          <!-- Estado da Regra -->
+          <div class="form-checkbox mt-3">
+            <input type="checkbox" id="ruleIsActive" checked>
+            <label for="ruleIsActive"><strong>Regra Ativa</strong> (avaliar durante o processamento)</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeRuleModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Regra</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <div class="footer-container">
+      <span>WA-MediaSorter MVP — Execução 100% Local (127.0.0.1) — Custo R$ 0/mês</span>
+      <span>Privacidade preservada: sem envio de dados ou fotos para a nuvem.</span>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
