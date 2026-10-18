@@ -1,0 +1,27 @@
+# Python & Virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases and runtime data
+data/*.db
+data/history.db*
+data/logs/
+
+# Downloads
+downloads/*
+!downloads/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
+*.swp
